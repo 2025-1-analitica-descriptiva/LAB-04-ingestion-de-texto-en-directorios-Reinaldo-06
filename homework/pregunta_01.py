@@ -4,6 +4,9 @@
 """
 Escriba el codigo que ejecute la accion solicitada en cada pregunta.
 """
+import os 
+import zipfile
+import pandas as pd
 
 
 def pregunta_01():
@@ -71,3 +74,58 @@ def pregunta_01():
 
 
     """
+    input_zip_path = "./files/input.zip"
+    extract_path = "./files/input"  # <- Aquí sí debe extraerse dentro de files/input
+
+    # Descomprimir si no existe la carpeta
+    if not os.path.exists(extract_path):
+        with zipfile.ZipFile(input_zip_path, 'r') as zip_ref:
+            zip_ref.extractall("./files")  # ZIP contiene la carpeta "input/"
+    else:
+        print("⚠️ La carpeta 'input' ya existe. No se descomprime nuevamente.")
+
+    train_path = os.path.join(extract_path, 'train')
+    test_path = os.path.join(extract_path, 'test')
+
+    # Generar dataset de entrenamiento
+    train_dataset = []
+    for target in ["negative", "positive", "neutral"]:
+        kind_path = os.path.join(train_path, target)
+        for filename in os.listdir(kind_path):
+            if filename.endswith('.txt'):
+                with open(os.path.join(kind_path, filename), 'r', encoding='utf-8') as f:
+                    phrase = f.read().strip()
+                    train_dataset.append({
+                        'phrase': phrase,
+                        'target': target
+                    })
+
+    # Generar dataset de prueba
+    test_dataset = []
+    for target in ["negative", "positive", "neutral"]:
+        kind_path = os.path.join(test_path, target)
+        for filename in os.listdir(kind_path):
+            if filename.endswith('.txt'):
+                with open(os.path.join(kind_path, filename), 'r', encoding='utf-8') as f:
+                    phrase = f.read().strip()
+                    test_dataset.append({
+                        'phrase': phrase,
+                        'target': target
+                    })
+
+    # Convertir a DataFrame
+    train_df = pd.DataFrame(train_dataset)
+    test_df = pd.DataFrame(test_dataset)
+
+    # Guardar los CSVs en la ruta esperada por el test
+    output_dir = './files/output'
+    os.makedirs(output_dir, exist_ok=True)
+
+    train_df.to_csv(os.path.join(output_dir, 'train_dataset.csv'), index=False)
+    test_df.to_csv(os.path.join(output_dir, 'test_dataset.csv'), index=False)
+
+    return train_df, test_df
+
+
+pregunta_01()
+
